@@ -1,0 +1,605 @@
+
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>기사 실시간 위치</title>
+
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=2c4c6fdc9cd0521656fe95459713c78f&autoload=false"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 100%; height: 100%; }
+    body {
+      font-family: Arial, "Malgun Gothic", sans-serif;
+      background: #f4f6f8;
+      color: #16181c;
+      overflow: hidden;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 350px 1fr;
+      height: 100vh;
+    }
+    .sidebar {
+      background: white;
+      border-right: 1px solid #e5e7eb;
+      padding: 28px 22px;
+      overflow-y: auto;
+      z-index: 10;
+    }
+    .eyebrow {
+      margin: 0 0 7px;
+      color: #777;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+    }
+    h1 { margin: 0; font-size: 28px; }
+    .sub {
+      color: #777;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .connection {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-top: 18px;
+      color: #777;
+      font-size: 12px;
+    }
+    .connection-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #aaa;
+    }
+    .connection-dot.connected { background: #16a05d; }
+    .connection-dot.error { background: #e74c3c; }
+    .summary {
+      margin-top: 24px;
+      padding: 18px;
+      background: #f5f6f7;
+      border: 1px solid #eceef0;
+      border-radius: 15px;
+    }
+    .summary small {
+      display: block;
+      color: #777;
+      margin-bottom: 5px;
+    }
+    .summary strong { font-size: 28px; }
+    .update-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      gap: 10px;
+      color: #999;
+      font-size: 12px;
+    }
+    .refresh-btn {
+      padding: 7px 10px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .list-title {
+      margin: 26px 0 8px;
+      font-size: 13px;
+      font-weight: 800;
+      color: #555;
+    }
+    .rider-item {
+      padding: 15px 12px;
+      margin-bottom: 7px;
+      border: 1px solid #eceef0;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+    .rider-item:hover { background: #f7f8f9; }
+    .rider-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .rider-name {
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .live-badge {
+      background: #e8f8ef;
+      color: #16894f;
+      border-radius: 999px;
+      padding: 4px 7px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+    .rider-id, .rider-time, .accuracy {
+      margin-top: 6px;
+      color: #888;
+      font-size: 12px;
+    }
+    .empty {
+      margin-top: 10px;
+      padding: 35px 15px;
+      text-align: center;
+      border: 1px dashed #ddd;
+      border-radius: 12px;
+      color: #999;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .map-area { position: relative; height: 100%; }
+    #map { width: 100%; height: 100%; }
+    .map-status {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 20;
+      padding: 11px 14px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.95);
+      box-shadow: 0 4px 18px rgba(0,0,0,.08);
+      font-size: 12px;
+      color: #555;
+    }
+    .map-error {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      background: #f4f6f8;
+      padding: 30px;
+    }
+    .error-card {
+      background: white;
+      border-radius: 18px;
+      padding: 30px;
+      text-align: center;
+      max-width: 520px;
+    }
+    @media(max-width:850px) {
+      .layout { grid-template-columns: 290px 1fr; }
+    }
+  
+    @media(max-width:720px){html,body{height:100%;overflow:auto}.layout{display:flex;flex-direction:column;height:auto;min-height:100dvh}.sidebar{padding:16px;max-height:44dvh;overflow:auto;border-right:0;border-bottom:1px solid #e5e7eb}.sidebar h1{font-size:21px}.summary{margin-top:10px;padding:10px}.list-title{margin-top:12px}.rider-item{padding:10px}.map-area{height:56dvh;min-height:320px;position:relative}.map-status{font-size:11px}}
+    .mobile-back{position:fixed;bottom:calc(16px + env(safe-area-inset-bottom));right:16px;z-index:1000;background:#0f172a;color:white;border-radius:999px;padding:12px 16px;text-decoration:none;box-shadow:0 4px 18px #0004;font-weight:700}
+  </style>
+</head>
+
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <p class="eyebrow">RIDER LOCATION</p>
+      <h1>기사 위치</h1>
+      <p class="sub">
+        위치 공유를 시작한 기사의<br>
+        현재 위치를 확인합니다.
+      </p>
+
+      <div class="connection">
+        <span class="connection-dot" id="connectionDot"></span>
+        <span id="connectionText">Supabase 연결 중...</span>
+      </div>
+
+      <div class="summary">
+        <small>현재 위치 공유</small>
+        <strong id="sharingCount">0명</strong>
+      </div>
+
+      <div class="update-info">
+        <span id="lastUpdate">업데이트: -</span>
+        <button class="refresh-btn" id="refreshBtn">새로고침</button>
+      </div>
+
+      <div class="list-title">위치 공유 기사</div>
+      <div id="riderList">
+        <div class="empty">위치 데이터를 불러오는 중...</div>
+      </div>
+    </aside>
+
+    <section class="map-area">
+      <div id="map"></div>
+      <div class="map-status" id="mapStatus">지도 준비 중...</div>
+
+      <div class="map-error" id="mapError">
+        <div class="error-card">
+          <h2>지도를 불러오지 못했습니다.</h2>
+          <p id="mapErrorMessage"></p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // ==========================================
+    // 설정
+    // ==========================================
+    const SUPABASE_URL =
+      "https://zkfhemhngrtwgwmtinuz.supabase.co";
+
+    const SUPABASE_KEY =
+      "sb_publishable_ghp_TLSYEgHwjRcTm3nFUQ_ggFyMLWu";
+
+    const TABLE_NAME = "rider_locations";
+
+    const REFRESH_INTERVAL = 5000;
+    const LIVE_TIMEOUT = 60000;
+
+    const DEFAULT_LAT = 35.1595;
+    const DEFAULT_LNG = 126.8526;
+
+    // ==========================================
+    // 화면 요소
+    // ==========================================
+    const $ = id => document.getElementById(id);
+
+    const sharingCount = $("sharingCount");
+    const riderList = $("riderList");
+    const lastUpdate = $("lastUpdate");
+    const mapStatus = $("mapStatus");
+    const refreshBtn = $("refreshBtn");
+    const connectionDot = $("connectionDot");
+    const connectionText = $("connectionText");
+
+    let map = null;
+    let markers = new Map();
+    let overlays = new Map();
+    let firstLocationLoaded = false;
+    let loading = false;
+
+    // ==========================================
+    // LIVE 판단
+    // ==========================================
+    function isLiveRider(rider) {
+      if (rider.is_sharing !== true) return false;
+      if (!isValidCoordinate(rider.latitude, rider.longitude)) {
+        return false;
+      }
+
+      if (!rider.last_seen_at) return false;
+
+      const lastSeen = new Date(rider.last_seen_at).getTime();
+
+      if (!Number.isFinite(lastSeen)) return false;
+
+      const elapsed = Date.now() - lastSeen;
+
+      return elapsed >= -10000 && elapsed <= LIVE_TIMEOUT;
+    }
+
+    function isValidCoordinate(lat, lng) {
+      if (lat === null || lng === null ||
+          lat === "" || lng === "") return false;
+
+      const latitude = Number(lat);
+      const longitude = Number(lng);
+
+      return Number.isFinite(latitude) &&
+             Number.isFinite(longitude) &&
+             latitude >= -90 && latitude <= 90 &&
+             longitude >= -180 && longitude <= 180;
+    }
+
+    // ==========================================
+    // 카카오맵 초기화
+    // ==========================================
+    function initializeMap() {
+      if (typeof kakao === "undefined" || !kakao.maps) {
+        showMapError("카카오맵 SDK가 로드되지 않았습니다.");
+        return;
+      }
+
+      kakao.maps.load(() => {
+        try {
+          map = new kakao.maps.Map($("map"), {
+            center: new kakao.maps.LatLng(
+              DEFAULT_LAT,
+              DEFAULT_LNG
+            ),
+            level: 6
+          });
+
+          mapStatus.textContent = "기사 위치 불러오는 중...";
+          loadRiders();
+        } catch (error) {
+          console.error(error);
+          showMapError("카카오맵 초기화에 실패했습니다.");
+        }
+      });
+    }
+
+    // ==========================================
+    // Supabase 조회
+    // ==========================================
+    async function loadRiders() {
+      if (loading || !map) return;
+      loading = true;
+      refreshBtn.disabled = true;
+
+      try {
+        const endpoint =
+          `${SUPABASE_URL}/rest/v1/${TABLE_NAME}` +
+          "?select=id,rider_name,rider_id,latitude,longitude,accuracy,is_sharing,last_seen_at" +
+          "&is_sharing=eq.true";
+
+        const response = await fetch(endpoint, {
+          method: "GET",
+          cache: "no-store",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            Accept: "application/json",
+            "Cache-Control": "no-cache"
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Supabase HTTP ${response.status}: ` +
+            await response.text()
+          );
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data)) {
+          throw new Error("잘못된 위치 데이터");
+        }
+
+        // 실제 공유 중이며 GPS가 최근 수신된 기사만 표시
+        const activeRiders = data.filter(isLiveRider);
+
+        connectionDot.className = "connection-dot connected";
+        connectionText.textContent = "Supabase 연결됨";
+
+        renderRiders(activeRiders);
+        updateMarkers(activeRiders);
+
+        sharingCount.textContent = `${activeRiders.length}명`;
+        lastUpdate.textContent =
+          `업데이트: ${new Date().toLocaleTimeString("ko-KR")}`;
+
+        mapStatus.textContent = activeRiders.length
+          ? `실시간 위치 공유 ${activeRiders.length}명`
+          : "현재 위치 공유 중인 기사가 없습니다.";
+
+      } catch (error) {
+        console.error("[SUPABASE]", error);
+
+        connectionDot.className = "connection-dot error";
+        connectionText.textContent = "Supabase 연결 오류";
+
+        // 조회 실패 시 오래된 LIVE 상태를 유지하지 않음
+        renderRiders([]);
+        updateMarkers([]);
+        sharingCount.textContent = "0명";
+
+        mapStatus.textContent = "위치 데이터 연결 오류";
+        riderList.innerHTML =
+          '<div class="empty">위치 데이터를 불러오지 못했습니다.<br>연결 상태를 확인해주세요.</div>';
+      } finally {
+        loading = false;
+        refreshBtn.disabled = false;
+      }
+    }
+
+    // ==========================================
+    // 기사 목록
+    // ==========================================
+    function renderRiders(riders) {
+      if (!riders.length) {
+        riderList.innerHTML = `
+          <div class="empty">
+            현재 위치를 공유 중인 기사가 없습니다.<br><br>
+            휴대폰에서 위치 공유를 시작하면<br>
+            여기에 표시됩니다.
+          </div>
+        `;
+        return;
+      }
+
+      riderList.innerHTML = riders.map(rider => {
+        const id = String(rider.rider_id || rider.id);
+        const name = escapeHtml(rider.rider_name || "기사");
+        const accuracy = Number(rider.accuracy);
+
+        const accuracyText =
+          rider.accuracy != null && Number.isFinite(accuracy)
+            ? `GPS 정확도 약 ${Math.round(accuracy)}m`
+            : "GPS 정확도 -";
+
+        return `
+          <div class="rider-item" data-rider-id="${escapeHtml(id)}">
+            <div class="rider-top">
+              <div class="rider-name">${name}</div>
+              <div class="live-badge">LIVE</div>
+            </div>
+            <div class="rider-id">${escapeHtml(id)}</div>
+            <div class="rider-time">
+              ${formatLastSeen(rider.last_seen_at)}
+            </div>
+            <div class="accuracy">${accuracyText}</div>
+          </div>
+        `;
+      }).join("");
+
+      riderList.querySelectorAll(".rider-item").forEach(item => {
+        item.addEventListener("click", () => {
+          focusRider(item.dataset.riderId);
+        });
+      });
+    }
+
+    // ==========================================
+    // 지도 마커
+    // ==========================================
+    function updateMarkers(riders) {
+      if (!map) return;
+
+      const activeIds = new Set();
+
+      riders.forEach(rider => {
+        const id = String(rider.rider_id || rider.id);
+        activeIds.add(id);
+
+        const position = new kakao.maps.LatLng(
+          Number(rider.latitude),
+          Number(rider.longitude)
+        );
+
+        if (markers.has(id)) {
+          markers.get(id).setPosition(position);
+
+          const overlay = overlays.get(id);
+          if (overlay) overlay.setPosition(position);
+
+        } else {
+          const marker = new kakao.maps.Marker({
+            map,
+            position
+          });
+
+          markers.set(id, marker);
+
+          const overlay = new kakao.maps.CustomOverlay({
+            map,
+            position,
+            content: createRiderLabel(rider),
+            yAnchor: 2.25
+          });
+
+          overlays.set(id, overlay);
+
+          kakao.maps.event.addListener(marker, "click", () => {
+            focusRider(id);
+          });
+        }
+      });
+
+      // 운행 종료 또는 60초 이상 GPS 미수신 기사 제거
+      for (const [id, marker] of markers.entries()) {
+        if (activeIds.has(id)) continue;
+
+        marker.setMap(null);
+        markers.delete(id);
+
+        const overlay = overlays.get(id);
+        if (overlay) {
+          overlay.setMap(null);
+          overlays.delete(id);
+        }
+      }
+
+      if (riders.length > 0 && !firstLocationLoaded) {
+        fitAllRiders(riders);
+        firstLocationLoaded = true;
+      }
+
+      if (riders.length === 0) {
+        firstLocationLoaded = false;
+      }
+    }
+
+    function createRiderLabel(rider) {
+      const name = escapeHtml(rider.rider_name || "기사");
+
+      return `
+        <div style="
+          background:#111;
+          color:white;
+          padding:7px 10px;
+          border-radius:9px;
+          font-size:12px;
+          font-weight:800;
+          white-space:nowrap;
+          box-shadow:0 3px 10px rgba(0,0,0,.20);
+        ">${name}</div>
+      `;
+    }
+
+    function focusRider(id) {
+      const marker = markers.get(String(id));
+      if (!marker || !map) return;
+
+      map.panTo(marker.getPosition());
+      map.setLevel(3);
+    }
+
+    function fitAllRiders(riders) {
+      if (!map || !riders.length) return;
+
+      if (riders.length === 1) {
+        map.setCenter(new kakao.maps.LatLng(
+          Number(riders[0].latitude),
+          Number(riders[0].longitude)
+        ));
+        map.setLevel(4);
+        return;
+      }
+
+      const bounds = new kakao.maps.LatLngBounds();
+
+      riders.forEach(rider => {
+        bounds.extend(new kakao.maps.LatLng(
+          Number(rider.latitude),
+          Number(rider.longitude)
+        ));
+      });
+
+      map.setBounds(bounds);
+    }
+
+    // ==========================================
+    // 표시 도우미
+    // ==========================================
+    function formatLastSeen(value) {
+      const time = new Date(value).getTime();
+      if (!Number.isFinite(time)) return "위치 수신 시간 없음";
+
+      const seconds = Math.max(
+        0,
+        Math.floor((Date.now() - time) / 1000)
+      );
+
+      if (seconds < 30) return "방금 위치 업데이트";
+      if (seconds < 60) return `${seconds}초 전`;
+      return `${Math.floor(seconds / 60)}분 전`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function showMapError(message) {
+      $("mapError").style.display = "flex";
+      $("mapErrorMessage").textContent = message;
+      mapStatus.textContent = "카카오맵 연결 오류";
+    }
+
+    // ==========================================
+    // 새로고침 및 시작
+    // ==========================================
+    refreshBtn.addEventListener("click", loadRiders);
+
+    setInterval(() => {
+      if (map) loadRiders();
+    }, REFRESH_INTERVAL);
+
+    initializeMap();
+  </script>
+<a class="mobile-back" href="./index.html">← 대시보드</a></body>
+</html>
+`

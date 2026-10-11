@@ -1,0 +1,1002 @@
+<!doctype html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+  >
+
+  <title>위치 공유 테스트</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+    }
+
+    body {
+      font-family:
+        Arial,
+        'Malgun Gothic',
+        sans-serif;
+
+      background: #f4f6f8;
+      color: #16181c;
+
+      padding: 24px;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 520px;
+
+      margin: 0 auto;
+    }
+
+    .eyebrow {
+      margin: 0 0 7px;
+
+      font-size: 12px;
+      font-weight: 800;
+
+      letter-spacing: 1.5px;
+
+      color: #777;
+    }
+
+    h1 {
+      margin: 0;
+
+      font-size: 30px;
+    }
+
+    .sub {
+      margin: 9px 0 0;
+
+      color: #777;
+
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .card {
+      margin-top: 24px;
+
+      padding: 22px;
+
+      background: #fff;
+
+      border:
+        1px solid #e6e8eb;
+
+      border-radius: 18px;
+
+      box-shadow:
+        0 5px 20px
+        rgba(0, 0, 0, 0.05);
+    }
+
+    .rider-label {
+      font-size: 12px;
+
+      color: #888;
+    }
+
+    .rider-name {
+      margin-top: 5px;
+
+      font-size: 22px;
+      font-weight: 800;
+    }
+
+    .rider-id {
+      margin-top: 4px;
+
+      font-size: 13px;
+
+      color: #999;
+    }
+
+    .status-box {
+      margin-top: 20px;
+
+      padding: 16px;
+
+      border-radius: 14px;
+
+      background: #f6f7f8;
+    }
+
+    .status-row {
+      display: flex;
+
+      justify-content: space-between;
+      align-items: center;
+
+      gap: 15px;
+
+      padding: 7px 0;
+
+      font-size: 13px;
+    }
+
+    .status-row span:first-child {
+      color: #888;
+    }
+
+    .status-value {
+      text-align: right;
+
+      font-weight: 700;
+
+      word-break: break-all;
+    }
+
+    .main-status {
+      display: flex;
+
+      align-items: center;
+
+      gap: 8px;
+
+      margin-top: 20px;
+
+      padding: 14px 16px;
+
+      border:
+        1px solid #e7e9ec;
+
+      border-radius: 13px;
+
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+
+      border-radius: 50%;
+
+      background: #aaa;
+
+      flex-shrink: 0;
+    }
+
+    .dot.waiting {
+      background: #aaa;
+    }
+
+    .dot.live {
+      background: #16a05d;
+    }
+
+    .dot.error {
+      background: #e74c3c;
+    }
+
+    .buttons {
+      display: grid;
+
+      grid-template-columns:
+        1fr 1fr;
+
+      gap: 10px;
+
+      margin-top: 18px;
+    }
+
+    button {
+      width: 100%;
+
+      border: 0;
+
+      border-radius: 13px;
+
+      padding: 16px 12px;
+
+      font-size: 15px;
+      font-weight: 800;
+
+      cursor: pointer;
+    }
+
+    #startBtn {
+      background: #111;
+      color: #fff;
+    }
+
+    #stopBtn {
+      background: #fff;
+      color: #333;
+
+      border:
+        1px solid #dfe2e5;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .notice {
+      margin-top: 18px;
+
+      padding: 14px;
+
+      border-radius: 12px;
+
+      background: #fff;
+
+      border:
+        1px solid #e6e8eb;
+
+      color: #777;
+
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+  <main class="wrap">
+
+    <p class="eyebrow">
+      GPS TEST
+    </p>
+
+    <h1>
+      내 위치 공유
+    </h1>
+
+    <p class="sub">
+      휴대폰 GPS 위치를 관리자 기사 위치 지도에
+      표시하기 위한 테스트 페이지입니다.
+    </p>
+
+
+    <section class="card">
+
+      <div class="rider-label">
+        테스트 계정
+      </div>
+
+      <div class="rider-name">
+        테스트기사
+      </div>
+
+      <div class="rider-id">
+        TEST001
+      </div>
+
+
+      <div
+        class="main-status"
+        id="mainStatus"
+      >
+
+        <span
+          class="dot waiting"
+          id="statusDot"
+        ></span>
+
+        <span id="statusText">
+          위치 공유 대기
+        </span>
+
+      </div>
+
+
+      <div class="status-box">
+
+        <div class="status-row">
+
+          <span>
+            위도
+          </span>
+
+          <span
+            class="status-value"
+            id="latitude"
+          >
+            -
+          </span>
+
+        </div>
+
+
+        <div class="status-row">
+
+          <span>
+            경도
+          </span>
+
+          <span
+            class="status-value"
+            id="longitude"
+          >
+            -
+          </span>
+
+        </div>
+
+
+        <div class="status-row">
+
+          <span>
+            GPS 정확도
+          </span>
+
+          <span
+            class="status-value"
+            id="accuracy"
+          >
+            -
+          </span>
+
+        </div>
+
+
+        <div class="status-row">
+
+          <span>
+            마지막 전송
+          </span>
+
+          <span
+            class="status-value"
+            id="lastSent"
+          >
+            -
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <div class="buttons">
+
+        <button id="startBtn">
+          위치 공유 시작
+        </button>
+
+        <button
+          id="stopBtn"
+          disabled
+        >
+          위치 공유 종료
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <div class="notice">
+      처음 시작할 때 브라우저가 위치 권한을 요청하면
+      <strong>허용</strong>을 눌러주세요.
+      테스트 중에는 이 페이지를 닫지 않는 것이 좋습니다.
+    </div>
+
+  </main>
+
+
+
+  <script>
+
+    // ==================================================
+    // Supabase
+    // ==================================================
+
+    const SUPABASE_URL =
+      'https://zkfhemhngrtwgwmtinuz.supabase.co';
+
+
+    const SUPABASE_KEY =
+      'sb_publishable_ghp_TLSYEgHwjRcTm3nFUQ_ggFyMLWu';
+
+
+    const TABLE_NAME =
+      'rider_locations';
+
+
+    // 테스트기사
+    const RIDER_ID =
+      'TEST001';
+
+
+    // ==================================================
+    // DOM
+    // ==================================================
+
+    const startBtn =
+      document.getElementById(
+        'startBtn'
+      );
+
+
+    const stopBtn =
+      document.getElementById(
+        'stopBtn'
+      );
+
+
+    const statusDot =
+      document.getElementById(
+        'statusDot'
+      );
+
+
+    const statusText =
+      document.getElementById(
+        'statusText'
+      );
+
+
+    const latitudeText =
+      document.getElementById(
+        'latitude'
+      );
+
+
+    const longitudeText =
+      document.getElementById(
+        'longitude'
+      );
+
+
+    const accuracyText =
+      document.getElementById(
+        'accuracy'
+      );
+
+
+    const lastSentText =
+      document.getElementById(
+        'lastSent'
+      );
+
+
+    // ==================================================
+    // 상태
+    // ==================================================
+
+    let watchId = null;
+
+    let sharing = false;
+
+    let sending = false;
+
+
+    // ==================================================
+    // Supabase 위치 업데이트
+    // ==================================================
+
+    async function updateLocation(
+      latitude,
+      longitude,
+      accuracy
+    ) {
+
+      if (sending) {
+        return;
+      }
+
+
+      sending = true;
+
+
+      try {
+
+        const endpoint =
+          `${SUPABASE_URL}/rest/v1/${TABLE_NAME}` +
+          `?rider_id=eq.${encodeURIComponent(RIDER_ID)}`;
+
+
+        const now =
+          new Date()
+            .toISOString();
+
+
+        const response =
+          await fetch(
+            endpoint,
+            {
+
+              method:
+                'PATCH',
+
+              headers: {
+
+                'apikey':
+                  SUPABASE_KEY,
+
+                'Authorization':
+                  `Bearer ${SUPABASE_KEY}`,
+
+                'Content-Type':
+                  'application/json',
+
+                'Prefer':
+                  'return=representation'
+
+              },
+
+              body:
+                JSON.stringify({
+
+                  latitude:
+                    latitude,
+
+                  longitude:
+                    longitude,
+
+                  accuracy:
+                    accuracy,
+
+                  is_sharing:
+                    true,
+
+                  last_seen_at:
+                    now
+
+                })
+
+            }
+          );
+
+
+        if (!response.ok) {
+
+          const errorText =
+            await response.text();
+
+
+          throw new Error(
+            `HTTP ${response.status} ${errorText}`
+          );
+
+        }
+
+
+        latitudeText.textContent =
+          Number(latitude)
+            .toFixed(6);
+
+
+        longitudeText.textContent =
+          Number(longitude)
+            .toFixed(6);
+
+
+        accuracyText.textContent =
+          `${Math.round(
+            Number(accuracy)
+          )}m`;
+
+
+        lastSentText.textContent =
+          new Date()
+            .toLocaleTimeString(
+              'ko-KR'
+            );
+
+
+        setLiveStatus(
+          '위치 공유 중'
+        );
+
+
+      } catch (error) {
+
+        console.error(
+          '[LOCATION UPDATE ERROR]',
+          error
+        );
+
+
+        setErrorStatus(
+          'Supabase 위치 전송 실패'
+        );
+
+
+      } finally {
+
+        sending = false;
+
+      }
+
+    }
+
+
+    // ==================================================
+    // 공유 종료 DB 반영
+    // ==================================================
+
+    async function setSharingOff() {
+
+      try {
+
+        const endpoint =
+          `${SUPABASE_URL}/rest/v1/${TABLE_NAME}` +
+          `?rider_id=eq.${encodeURIComponent(RIDER_ID)}`;
+
+
+        const response =
+          await fetch(
+            endpoint,
+            {
+
+              method:
+                'PATCH',
+
+              headers: {
+
+                'apikey':
+                  SUPABASE_KEY,
+
+                'Authorization':
+                  `Bearer ${SUPABASE_KEY}`,
+
+                'Content-Type':
+                  'application/json'
+
+              },
+
+              body:
+                JSON.stringify({
+
+                  is_sharing:
+                    false,
+
+                  last_seen_at:
+                    new Date()
+                      .toISOString()
+
+                })
+
+            }
+          );
+
+
+        if (!response.ok) {
+
+          const errorText =
+            await response.text();
+
+
+          throw new Error(
+            `HTTP ${response.status} ${errorText}`
+          );
+
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          '[SHARING OFF ERROR]',
+          error
+        );
+
+
+        throw error;
+
+      }
+
+    }
+
+
+    // ==================================================
+    // GPS 시작
+    // ==================================================
+
+    function startSharing() {
+
+      if (sharing) {
+        return;
+      }
+
+
+      if (
+        !navigator.geolocation
+      ) {
+
+        setErrorStatus(
+          '이 브라우저에서는 GPS를 사용할 수 없습니다.'
+        );
+
+        return;
+
+      }
+
+
+      statusDot.className =
+        'dot waiting';
+
+
+      statusText.textContent =
+        'GPS 위치 확인 중...';
+
+
+      startBtn.disabled =
+        true;
+
+
+      watchId =
+        navigator.geolocation
+          .watchPosition(
+
+            // ------------------------------------------
+            // 위치 성공
+            // ------------------------------------------
+
+            position => {
+
+              sharing = true;
+
+
+              stopBtn.disabled =
+                false;
+
+
+              const coords =
+                position.coords;
+
+
+              updateLocation(
+
+                coords.latitude,
+
+                coords.longitude,
+
+                coords.accuracy
+
+              );
+
+            },
+
+
+            // ------------------------------------------
+            // 위치 오류
+            // ------------------------------------------
+
+            error => {
+
+              console.error(
+                '[GPS ERROR]',
+                error
+              );
+
+
+              sharing =
+                false;
+
+
+              startBtn.disabled =
+                false;
+
+
+              stopBtn.disabled =
+                true;
+
+
+              if (
+                error.code === 1
+              ) {
+
+                setErrorStatus(
+                  '위치 권한이 거부되었습니다.'
+                );
+
+              }
+
+              else if (
+                error.code === 2
+              ) {
+
+                setErrorStatus(
+                  '현재 위치를 확인할 수 없습니다.'
+                );
+
+              }
+
+              else if (
+                error.code === 3
+              ) {
+
+                setErrorStatus(
+                  'GPS 위치 확인 시간이 초과되었습니다.'
+                );
+
+              }
+
+              else {
+
+                setErrorStatus(
+                  'GPS 오류가 발생했습니다.'
+                );
+
+              }
+
+            },
+
+
+            // ------------------------------------------
+            // GPS 옵션
+            // ------------------------------------------
+
+            {
+
+              enableHighAccuracy:
+                true,
+
+              timeout:
+                15000,
+
+              maximumAge:
+                3000
+
+            }
+
+          );
+
+    }
+
+
+    // ==================================================
+    // GPS 종료
+    // ==================================================
+
+    async function stopSharing() {
+
+      if (
+        watchId !== null
+      ) {
+
+        navigator.geolocation
+          .clearWatch(
+            watchId
+          );
+
+
+        watchId = null;
+
+      }
+
+
+      sharing =
+        false;
+
+
+      startBtn.disabled =
+        false;
+
+
+      stopBtn.disabled =
+        true;
+
+
+      statusDot.className =
+        'dot waiting';
+
+
+      statusText.textContent =
+        '위치 공유 종료 중...';
+
+
+      try {
+
+        await setSharingOff();
+
+
+        statusText.textContent =
+          '위치 공유 종료';
+
+
+      } catch (error) {
+
+        setErrorStatus(
+          '공유 종료 처리 실패'
+        );
+
+      }
+
+    }
+
+
+    // ==================================================
+    // LIVE 표시
+    // ==================================================
+
+    function setLiveStatus(
+      message
+    ) {
+
+      statusDot.className =
+        'dot live';
+
+
+      statusText.textContent =
+        message;
+
+    }
+
+
+    // ==================================================
+    // 오류 표시
+    // ==================================================
+
+    function setErrorStatus(
+      message
+    ) {
+
+      statusDot.className =
+        'dot error';
+
+
+      statusText.textContent =
+        message;
+
+    }
+
+
+    // ==================================================
+    // 버튼
+    // ==================================================
+
+    startBtn.addEventListener(
+      'click',
+      startSharing
+    );
+
+
+    stopBtn.addEventListener(
+      'click',
+      stopSharing
+    );
+
+
+    // ==================================================
+    // 페이지 종료 시 GPS 감시 해제
+    // ==================================================
+
+    window.addEventListener(
+      'pagehide',
+      () => {
+
+        if (
+          watchId !== null
+        ) {
+
+          navigator.geolocation
+            .clearWatch(
+              watchId
+            );
+
+        }
+
+      }
+    );
+
+  </script>
+
+<a href="./index.html" style="display:block;margin:24px auto;text-align:center;color:#2563eb">← 대시보드로 돌아가기</a></body>
+
+</html>
